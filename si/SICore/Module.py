@@ -39,12 +39,20 @@ class Module:
         if not moduleObj in self._requiredBy:
             self._requiredBy[ moduleObj.name() ] = moduleObj
 
+    def url(self):
+        return self._url
+
+    def setUrl(self, url):
+        self._url = url
+
 def buildModules(core):
     modules = {}
     cfg = core.config()
 
     for mod in cfg.modules():
-        modules[ mod ] = Module( core,  mod )
+        m = Module( core,  mod )
+        modules[ mod ] = m
+        m.setUrl( cfg.moduleUrl( mod ) )
 
     for mod in cfg.modules():
         deps = cfg.dependencies( mod )

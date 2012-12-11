@@ -32,15 +32,20 @@ class Status(Command):
             if len(deps) + len(requ) > 0:
                 print name
                 if len(deps) > 0:
-                    print "\tDepends on:",  string.join( m.dependsOn(),  '; ' )
+                    print "\tDepends on  :",  string.join( m.dependsOn(),  '; ' )
                 if len(requ) > 0:
-                    print "\tRequired by:",  string.join( m.requiredBy(),  '; ' )
+                    print "\tRequired by :",  string.join( m.requiredBy(),  '; ' )
+                print "\tURL         :",  m.url()
             else:
                 print name, '(Not required)'
                 
     
 class Add(Command):
     pass
+
+class Init(Command):
+    def run(self):
+        pass
 
 def listCommands():
     return [\

@@ -51,8 +51,18 @@ class Config:
         if not moduleName in self._modules:
             return None
         
-        mod = self._modules[ moduleName ]        
+        mod = self._modules[ moduleName ]
         if not 'depends' in mod:
             return None
         
         return mod[ 'depends' ]
+
+    def moduleUrl(self,  moduleName):
+        if not moduleName in self._modules:
+            return None
+
+        mod = self._modules[ moduleName ]
+        if not 'url' in mod:
+            return None
+
+        return mod[ 'url' ]
