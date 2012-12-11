@@ -31,3 +31,10 @@ class Status(Command):
     
 class Add(Command):
     pass
+
+def listCommands():
+    return [\
+        'add',
+        'init',
+        'status'
+        ]

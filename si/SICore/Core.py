@@ -26,7 +26,7 @@ class Core:
         parser = argparse.ArgumentParser( prog = 'si' )
         parser.add_argument( \
             'cmd', nargs='?', \
-            choices=['status', 'add', 'remove'], \
+            choices= SICore.Commands.listCommands(), \
             default='status' )
         parser.add_argument( '-v', action='count', default=0 )
         parser.add_argument( 'cmd_opts',  nargs='*' )
