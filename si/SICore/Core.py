@@ -107,11 +107,11 @@ class Module:
         self._url = url
 
 class Command:
-    def setup(self, si, args):
-        self._core = si
+    def setup(self, core, args):
+        self._core = core
         self._args = args
 
-class Status(Command):
+class CommandStatus(Command):
     def run(self):
         self._config = self._core.config()
         self._modules = self._core.modules()
@@ -133,11 +133,10 @@ class Status(Command):
                 print name, '(Not required)'
                 
     
-class Add(Command):
+class CommandAdd(Command):
     pass
 
-class Init(Command):
-    
+class CommandInit(Command):
     def parseArguments(self):
         p = argparse.ArgumentParser(
             prog = 'si init',
@@ -190,9 +189,9 @@ class Core:
 
     def listCommands(self):
         return {
-            'add': lambda: Add(),
-            'init': lambda: Init(),
-            'status': lambda: Status()
+            'add': lambda: CommandAdd(),
+            'init': lambda: CommandInit(),
+            'status': lambda: CommandStatus()
             }
 
     def buildModules(self):
