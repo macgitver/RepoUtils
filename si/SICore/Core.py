@@ -166,11 +166,38 @@ class CommandInit(Command):
             nargs = '?',
             metavar = 'url',
             help = '(Git-)url to checkout, if this is not a standalone project')
-        self.opts = p.parse_args( self._args )
-        print self.opts
+
+        p.add_argument(
+            '--no-bs',
+            default = False,
+            action = 'store_true',
+            help = 'Do not update the local buildsystem' )
+
+        opts = p.parse_args( self._args )
+
+        if not opts.p:
+            self._path = os.getcwd()
+        else:
+            self._path = p
+
+        if opts.standalone:
+            self._standalone = True
+            self._skipBuildSystem = True
+            if opts.u:
+                print 'Cannot use url with standalone projects.'
+                exit(-1)
+            self._url = ''
+        else:
+            self._standalone = False
+            self._skipBuildSystem = opts.no_bs
+            if not opts.u:
+                print 'Non standalone project requires an url'
+                exit(-1)
+            self._url = opts.u
 
     def run(self):
         self.parseArguments()
+        print self._path,  self._url,  self._standalone,  self._skipBuildSystem
 
 class Core:
     def __init__(self):
