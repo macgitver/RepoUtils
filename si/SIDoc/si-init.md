@@ -28,7 +28,8 @@ Initialize a si-managed project.
 
 ## Examples
 
-Given the 3 `si`-modules bar, baz and frotz, all of which are located at `git@example.com:/`.
+Given the 3 si-modules `bar`, `baz` and `frotz`, all of which are located at
+`git@example.com:/`.
 With `baz` having a dependency on `frotz`.
 
 The following sequence will be
@@ -50,7 +51,10 @@ equivalent to:
 	echo "ADD_SUBDIRECTORY(baz)" >>CMakeLists.txt
 	cat $SI_DIR/CMakeLists.txt.postfix >>CMakeLists.txt
 
-`si` will setup the project directory, then `git clone` the modules we explicitly added to it.
-It will then figure out about `baz`s dependency on `frotz` and will `git clone` it, too.
-Finally, `si` will scan the dependency graph and create a build system for your project.
+si will:
+-   setup the project directory
+-   `git clone` the modules we explicitly added to it
+-   figure out about the dependency from `baz` to `frotz` and will `git clone` `frotz`
+-   scan the dependency graph and create a build system for your project
+
 
