@@ -106,17 +106,69 @@ class Module:
     def setUrl(self, url):
         self._url = url
 
+class BuildSystemUpdater:
+    def __init__(self, core, basePath ):
+        self._core = core
+        self._basePath = basePath
+
+    def update(self):
+        pass
+
 class Command:
     def setup(self, core, args):
         self._core = core
         self._args = args
+        self._basePath = os.getcwd()
+        self._skipBuildSystem = False
+        self.parseArguments()
+
+    def addDefaultArguments(self, parser, nobs = False):
+        parser.add_argument(
+            '-p',
+            nargs = '?',
+            metavar = 'path',
+            help = 'set the base path of the project. Defaults to the current working directory')
+
+        if nobs:
+            parser.add_argument(
+                '--no-bs',
+                default = False,
+                action = 'store_true',
+                help = 'Do not update the local buildsystem' )
+
+    def handleDefaultArguments(self, opts, nobs = False ):
+        if opts.p:
+            self._basePath = opts.p
+            self._core.setBasePath( opts.p )
+        if nobs and opts.no_bs:
+            self._skipBuildSystem = opts.no_bs
+
+    def parseArguments(self):
+        print 'Command did not supply an argument parser'
+        exit(-1)
+
+    def updateBuildSystem(self):
+        if self._skipBuildSystem:
+            return
+
+        bsUpdater = BuildSystemUpdater( self.core, self._basePath )
+        bsUpdater.update()
 
 class CommandStatus(Command):
     def run(self):
         self._config = self._core.config()
         self._modules = self._core.modules()
         self.showDependencies()
-    
+
+    def parseArguments(self):
+        p = argparse.ArgumentParser(
+            prog = 'si [status]',
+            description = 'Show the status of a local si-project.')
+
+        self.addDefaultArguments( p )
+        opts = p.parse_args( self._args )
+        self.handleDefaultArguments( opts )
+
     def showDependencies(self):
         for name in self._modules:
             m = self._modules[ name ]
@@ -131,8 +183,7 @@ class CommandStatus(Command):
                 print "\tURL         :",  m.url()
             else:
                 print name, '(Not required)'
-                
-    
+
 class CommandAdd(Command):
     pass
 
@@ -156,29 +207,14 @@ class CommandInit(Command):
             help = 'set the build system used for this project (default: %(default)s)' )
 
         p.add_argument(
-            '-p',
-            nargs = '?',
-            metavar = 'path',
-            help = 'set the base path of the project. Defaults to the current working directory')
-
-        p.add_argument(
             '-u',
             nargs = '?',
             metavar = 'url',
             help = '(Git-)url to checkout, if this is not a standalone project')
 
-        p.add_argument(
-            '--no-bs',
-            default = False,
-            action = 'store_true',
-            help = 'Do not update the local buildsystem' )
-
+        self.addDefaultArguments( p, True )
         opts = p.parse_args( self._args )
-
-        if not opts.p:
-            self._path = os.getcwd()
-        else:
-            self._path = p
+        self.handleDefaultArguments( opts, not opts.standalone )
 
         if opts.standalone:
             self._standalone = True
@@ -189,7 +225,6 @@ class CommandInit(Command):
             self._url = ''
         else:
             self._standalone = False
-            self._skipBuildSystem = opts.no_bs
             if not opts.u:
                 print 'Non standalone project requires an url'
                 exit(-1)
@@ -197,7 +232,7 @@ class CommandInit(Command):
 
     def run(self):
         self.parseArguments()
-        print self._path,  self._url,  self._standalone,  self._skipBuildSystem
+        print self._basePath, self._url, self._standalone, self._skipBuildSystem
 
 class Core:
     def __init__(self):
@@ -205,7 +240,12 @@ class Core:
         self._config = None
         self._basePath = os.getcwd()
         self._modules = None
-        
+
+    def setBasePath(self, basePath):
+        if basePath != self._basePath:
+            self._config = None
+            self._basePath = basePath
+
     def config(self):
         if self._config == None:
             self._config = Config( self, os.path.join( self._basePath, '.siconf' ) )
