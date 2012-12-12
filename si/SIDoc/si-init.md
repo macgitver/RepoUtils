@@ -15,12 +15,12 @@ Initialize a si-managed project.
 	Specifiy a build system for the project. All modules in the project must use the same
 	build system. `si` currently only has support for cmake.
 
+*	__-u [url]__
+	This gives `si` the url to clone for the project. Cannot be used together with -s.
+
 *	__-p [path]__
 	The base path of the project to create. This path should either not exist or be empty.
 	If this option is omitted, the current working directory is assumed.
-
-*	__-u [url]__
-	This gives `si` the url to clone for the project. Cannot be used together with -s.
 
 *	__--no-bs__
 	Postpone updating of build system files. This is useful, if you want to make changes to
@@ -37,8 +37,8 @@ With `baz` having a dependency on `frotz`.
 The sequence
 
 	si init -s -p /work/foo
-	si module add --no-bs -p /work/foo bar git@example.com:/bar.git
-	si module add --no-bs -p /work/foo baz git@example.com:/baz.git
+	si module add --no-bs -p /work/foo git@example.com:/bar.git
+	si module add --no-bs -p /work/foo git@example.com:/baz.git
 	si buildsystem update
 
 will be equivalent to:
