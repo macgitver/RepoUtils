@@ -173,18 +173,12 @@ class Init(Command):
     def run(self):
         self.parseArguments()
 
-def listCommands():
-    return [
-        'add',
-        'init',
-        'status'
-        ]
-
 class Core:
     def __init__(self):
         self._debugLevel = 0
         self._config = None
         self._basePath = os.getcwd()
+        self._modules = None
         
     def config(self):
         if self._config == None:
@@ -194,16 +188,19 @@ class Core:
     def debugLevel(self):
         return self._debugLevel
 
-    def run(self):
-        c = self.createCommand()
-        c.run()
+    def listCommands(self):
+        return {
+            'add': lambda: Add(),
+            'init': lambda: Init(),
+            'status': lambda: Status()
+            }
 
     def buildModules(self):
         self._modules = {}
         cfg = self.config()
 
         for mod in cfg.modules():
-            m = Module( core,  mod )
+            m = Module( self, mod )
             self._modules[ mod ] = m
             m.setUrl( cfg.moduleUrl( mod ) )
 
@@ -212,7 +209,7 @@ class Core:
             if deps != None and len(deps):
                 modObj = self._modules[ mod ]
                 for moddep in deps:
-                    if not moddep in modules:
+                    if not moddep in self._modules:
                         core.warn( '{} is an unsatisfied dependency of {}' \
                             .format( moddep,  mod ) )
                     else:
@@ -225,15 +222,23 @@ class Core:
         return self._modules
 
     def createCommand(self):
+        cmds = self.listCommands()
+        
         parser = argparse.ArgumentParser( prog = 'si' )
         parser.add_argument(
             'cmd', nargs='?',
-            choices = listCommands(),
+            choices = cmds,
             default ='status' )
         parser.add_argument( '-v', action='count', default=0 )
         parser.add_argument( 'cmd_opts', nargs = argparse.REMAINDER )
         args = parser.parse_args( sys.argv[1:] )
-        exec "command = {0}()".format(string.capitalize(args.cmd))
+
         self._debugLevel = args.v
+
+        command = cmds[ args.cmd ]()
         command.setup(self, args.cmd_opts)
         return command
+
+    def run(self):
+        c = self.createCommand()
+        c.run()
