@@ -26,8 +26,16 @@ class GitConfig:
     def set(self, key, value):
         return self._run( key, value )
 
-    def get(self, key): pass
-        #out = subprocess.check_output( [ 'git', 'config', '-f', self._fileName, ])
+    def get(self, key):
+        return self._run( key )
+
+    def getAll(self):
+        out = self._run( '-l' )
+        kv = {}
+        for s in out.split():
+            [k, v] = s.split( '=' )
+            kv[ k ] = v
+        return kv
 
     def _run(self, *args):
         realArgs = [ 'git', 'config', '-f', self._fileName ]
@@ -41,6 +49,7 @@ class Config:
         self._modules = {}
         self._module = ''
         self._filename = file
+        self._gitcfg = GitConfig( file )
         
         self.parse()
         
@@ -49,12 +58,13 @@ class Config:
             print 'Reading .siconf from {0}'.format(self._filename)
 
         if not os.path.exists( self._filename ):
+            # Do we really want this to be printed?
             print '{0} does not exist.'.format( self._filename )
             return
 
-        out = subprocess.check_output( [ 'git', 'config',  '-f',  self._filename, '-l' ] )
-        for s in out.split():
-            [setting, value] = s.split( '=' )
+        all = self._gitcfg.getAll()
+        for setting in all:
+            value = all[ setting ]
             parts = setting.split( '.' )
             if len(parts) == 2:
                 subsection = ''
