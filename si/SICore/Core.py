@@ -198,6 +198,44 @@ class Command:
         bsUpdater = BuildSystemUpdater( self._core, self._basePath )
         bsUpdater.update()
 
+class Subcommand(Command):
+    def __init__(self, commandList, defaultCmd, prog, isRoot = False ):
+        self._commandList = commandList
+        self._defaultCmd = defaultCmd
+        self._prog = prog
+        self._isRoot = isRoot
+
+    def parseArguments(self):
+        parser = argparse.ArgumentParser( prog = self._prog )
+
+        parser.add_argument(
+            'cmd',
+            nargs = '?',
+            choices = self._commandList,
+            default = self._defaultCmd )
+
+        if self._isRoot:
+            parser.add_argument(
+                '-v',
+                action = 'count',
+                default = 0 )
+
+        parser.add_argument(
+            'cmd_opts',
+            nargs = argparse.REMAINDER )
+
+        args = parser.parse_args( self._args )
+
+        if self._isRoot:
+            self._core._debugLevel = args.v
+
+        self._cmd = self._commandList[ args.cmd ]()
+        self._cmd.setup( self._core, args.cmd_opts )
+        return self._cmd;
+
+    def run(self):
+        self._cmd.run()
+
 class CommandStatus(Command):
     def run(self):
         self._config = self._core.config()
@@ -295,6 +333,16 @@ class CommandInit(Command):
             self.initCloned()
         self.updateBuildSystem()
 
+class CommandModuleAdd(Command): pass
+class CommandModuleList(Command): pass
+class CommandModule(Subcommand):
+    def __init__(self):
+        cmds = {
+            'list': lambda: CommandModuleList(),
+            'add': lambda: CommandModuleAdd()
+        }
+        Subcommand.__init__( self, cmds, 'list', 'si module')
+
 class Core:
     def __init__(self):
         self._debugLevel = 0
@@ -318,7 +366,8 @@ class Core:
     def listCommands(self):
         return {
             'init': lambda: CommandInit(),
-            'status': lambda: CommandStatus()
+            'status': lambda: CommandStatus(),
+            'module': lambda: CommandModule()
             }
 
     def buildModules(self):
@@ -348,27 +397,13 @@ class Core:
         return self._modules
 
     def createCommand(self):
-        cmds = self.listCommands()
-
-        parser = argparse.ArgumentParser( prog = 'si' )
-        parser.add_argument(
-            'cmd', nargs='?',
-            choices = cmds,
-            default ='status' )
-        parser.add_argument( '-v', action='count', default=0 )
-        parser.add_argument( 'cmd_opts', nargs = argparse.REMAINDER )
-        args = parser.parse_args( sys.argv[1:] )
-
-        self._debugLevel = args.v
-
-        command = cmds[ args.cmd ]()
-        command.setup(self, args.cmd_opts)
-        return command
+        self._cmd = Subcommand( self.listCommands(),  'status', 'si', True )
+        self._cmd.setup( self, sys.argv[ 1: ] )
 
     def run(self):
         try:
-            c = self.createCommand()
-            c.run()
+            self.createCommand()
+            self._cmd.run()
             if self.debugLevel() > 0:
                 print "Success."
         except FatalError as e:
