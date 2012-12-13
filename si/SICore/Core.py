@@ -13,8 +13,8 @@ import os, os.path, string, sys, argparse
 import subprocess
 
 class FatalError:
-    def __init__(self, message):
-        self._message = message
+    def __init__(self, message, *args):
+        self._message = message.format( args )
 
     def printMessage(self):
         print self._message
