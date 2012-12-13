@@ -12,6 +12,29 @@
 import os, os.path, string, sys, argparse
 import subprocess
 
+class FatalError:
+    def __init__(self, message):
+        self._message = message
+
+    def printMessage(self):
+        print self._message
+
+class GitConfig:
+    def __init__(self, fileName):
+        self._fileName = fileName
+
+    def set(self, key, value):
+        return self._run( key, value )
+
+    def get(self, key): pass
+        #out = subprocess.check_output( [ 'git', 'config', '-f', self._fileName, ])
+
+    def _run(self, *args):
+        realArgs = [ 'git', 'config', '-f', self._fileName ]
+        for s in args:
+            realArgs.append( s )
+        return subprocess.check_output( realArgs )
+
 class Config:
     def __init__(self, core, file):
         self._core = core
@@ -144,14 +167,13 @@ class Command:
             self._skipBuildSystem = opts.no_bs
 
     def parseArguments(self):
-        print 'Command did not supply an argument parser'
-        exit(-1)
+        raise FatalError( 'Command did not supply an argument parser' )
 
     def updateBuildSystem(self):
         if self._skipBuildSystem:
             return
 
-        bsUpdater = BuildSystemUpdater( self.core, self._basePath )
+        bsUpdater = BuildSystemUpdater( self._core, self._basePath )
         bsUpdater.update()
 
 class CommandStatus(Command):
@@ -220,19 +242,37 @@ class CommandInit(Command):
             self._standalone = True
             self._skipBuildSystem = True
             if opts.u:
-                print 'Cannot use url with standalone projects.'
-                exit(-1)
+                raise FatalError( 'Cannot use url with standalone projects.' )
             self._url = ''
         else:
             self._standalone = False
             if not opts.u:
-                print 'Non standalone project requires an url'
-                exit(-1)
+                raise FatalError( 'Non standalone project requires an url' )
             self._url = opts.u
+
+    def initDirectory(self):
+        if os.path.exists( self._basePath ):
+            if len( os.listdir( self._basePath ) ) != 0:
+                raise FatalError( 'Destination directory {} is not empty'.format( self._basePath ) )
+        else:
+            os.makedirs( self._basePath )
+
+    def initStandAlone(self):
+        self.initDirectory()
+        cfg = GitConfig( os.path.join( self._basePath, '.siconf' ) )
+        cfg.set( 'core.standalone', '1' )
+        self._config = self._core.config()
+
+    def initCloned(self):
+        self.initDirectory()
 
     def run(self):
         self.parseArguments()
-        print self._basePath, self._url, self._standalone, self._skipBuildSystem
+        if self._standalone:
+            self.initStandAlone()
+        else:
+            self.initCloned()
+        self.updateBuildSystem()
 
 class Core:
     def __init__(self):
@@ -306,5 +346,10 @@ class Core:
         return command
 
     def run(self):
-        c = self.createCommand()
-        c.run()
+        try:
+            c = self.createCommand()
+            c.run()
+            if self.debugLevel() > 0:
+                print "Success."
+        except FatalError as e:
+            e.printMessage()
