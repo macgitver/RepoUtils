@@ -50,9 +50,9 @@ class Config:
         self._module = ''
         self._filename = file
         self._gitcfg = GitConfig( file )
-        
+
         self.parse()
-        
+
     def parse(self):
         if self._core.debugLevel() > 1:
             print 'Reading .siconf from {0}'.format(self._filename)
@@ -71,6 +71,19 @@ class Config:
                 [ section, key ] = parts
             else:
                 [ section, subsection, key ] = parts
+
+            if section == 'core':
+                if subsection != '':
+                    raise FatalError( 'Bad config option: {}', setting )
+                if key == 'standalone':
+                    self._standalone = value != '0'
+
+            if section == 'buildsystem':
+                if subsection != '':
+                    raise FatalError( 'Bad config option: {}', setting )
+                if key == 'type':
+                    self._buildSystemType = value
+
             if section == 'modules':
                 if not subsection in self._modules:
                     self._modules[subsection] = {};
@@ -84,15 +97,15 @@ class Config:
     def modules(self):
         for key in self._modules:
             yield key
-    
+
     def dependencies(self, moduleName ):
         if not moduleName in self._modules:
             return None
-        
+
         mod = self._modules[ moduleName ]
         if not 'depends' in mod:
             return None
-        
+
         return mod[ 'depends' ]
 
     def moduleUrl(self,  moduleName):
@@ -113,22 +126,21 @@ class Module:
         self._requiredBy = {}
 
     def store(self):
-        print 'Save-Request for {} not implemented, yet' \
-            .format(self._name)
+        raise FatalError( 'Save-Request for {} not implemented, yet', self._name )
 
     def dependsOn(self):
         return self._dependsOn
-        
+
     def requiredBy(self):
         return self._requiredBy
-        
+
     def name(self):
         return self._name
-        
+
     def addDependency(self, moduleObj):
         if not moduleObj in self._dependsOn:
             self._dependsOn[ moduleObj.name() ] = moduleObj
-        
+
     def addRequiredBy(self, moduleObj):
         if not moduleObj in self._requiredBy:
             self._requiredBy[ moduleObj.name() ] = moduleObj
@@ -235,7 +247,7 @@ class CommandInit(Command):
             '-b', '--buildsystem',
             default = 'cmake',
             nargs = '?',
-            metavar = 'buildsystem', 
+            metavar = 'buildsystem',
             help = 'set the build system used for this project (default: %(default)s)' )
 
         p.add_argument(
@@ -260,6 +272,8 @@ class CommandInit(Command):
                 raise FatalError( 'Non standalone project requires an url' )
             self._url = opts.u
 
+        self._buildSystem = opts.buildsystem
+
     def initDirectory(self):
         if os.path.exists( self._basePath ):
             if len( os.listdir( self._basePath ) ) != 0:
@@ -271,7 +285,7 @@ class CommandInit(Command):
         self.initDirectory()
         cfg = GitConfig( os.path.join( self._basePath, '.siconf' ) )
         cfg.set( 'core.standalone', '1' )
-        self._config = self._core.config()
+        cfg.set( 'buildsystem.type', self._buildSystem )
 
     def initCloned(self):
         self.initDirectory()
@@ -300,7 +314,7 @@ class Core:
         if self._config == None:
             self._config = Config( self, os.path.join( self._basePath, '.siconf' ) )
         return self._config
-        
+
     def debugLevel(self):
         return self._debugLevel
 
@@ -339,7 +353,7 @@ class Core:
 
     def createCommand(self):
         cmds = self.listCommands()
-        
+
         parser = argparse.ArgumentParser( prog = 'si' )
         parser.add_argument(
             'cmd', nargs='?',
