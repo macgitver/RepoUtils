@@ -228,9 +228,6 @@ class CommandStatus(Command):
             else:
                 print name, '(Not required)'
 
-class CommandAdd(Command):
-    pass
-
 class CommandInit(Command):
     def parseArguments(self):
         p = argparse.ArgumentParser(
@@ -320,7 +317,6 @@ class Core:
 
     def listCommands(self):
         return {
-            'add': lambda: CommandAdd(),
             'init': lambda: CommandInit(),
             'status': lambda: CommandStatus()
             }
