@@ -11,9 +11,8 @@
 # http://sam.zoy.org/wtfpl/COPYING for more details.
 
 
-import os, SICore.Core
+import SICore.Core
 
-os.chdir( '/work/mgv2/src' )
 si = SICore.Core.Core()
 si.run()
 
